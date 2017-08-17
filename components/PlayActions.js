@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
+import PropTypes from 'prop-types';
 import { StyleSheet, View, Button } from 'react-native';
-import playTypes from '../utils/PlayTypes.js';
+import { playTypes } from '../utils/dataDef.js';
 
 export default class PlayActions extends Component {
     render() {
@@ -8,7 +9,13 @@ export default class PlayActions extends Component {
             <View style={styles.playActions}>
                 { Object.keys(playTypes).map((button) => (
                     <View key={button} style={styles.buttonWrapper}>
-                        <Button style={styles.button} onPress={() => this.props.onPress(button)} title={playTypes[button]} key={button} />
+                        <Button
+                            style={styles.button}
+                            color={playTypes[button].color}
+                            onPress={() => this.props.onPress(button)}
+                            title={playTypes[button].label}
+                            key={button}
+                        />
                         {this.props.type === button && this.props.children}
                     </View>
                 ))}
@@ -17,9 +24,14 @@ export default class PlayActions extends Component {
     }
 }
 
+PlayActions.propTypes = {
+    children: PropTypes.element,
+    type: PropTypes.oneOf(['port', 'foulPort']).isRequired,
+    onPress: PropTypes.func.isRequired
+};
+
 const styles = StyleSheet.create({
     playActions: {
-        flex: 1,
         width: '100%'
     },
     buttonWrapper: {

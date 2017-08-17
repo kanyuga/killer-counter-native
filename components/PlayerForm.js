@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { View, TextInput, Button } from 'react-native';
 
 
@@ -33,3 +34,7 @@ export default class PlayerForm extends Component {
         )
     }
 }
+
+PlayerForm.propTypes = {
+    onSubmit: PropTypes.func.isRequired
+};

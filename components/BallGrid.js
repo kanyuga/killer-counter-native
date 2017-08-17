@@ -1,5 +1,7 @@
 import React, {Component} from 'react';
+import PropTypes from 'prop-types';
 import {StyleSheet, View, Button, Text} from 'react-native';
+import { Ball, playTypes } from '../utils/dataDef';
 
 export default class BallGrid extends Component {
     render() {
@@ -11,6 +13,7 @@ export default class BallGrid extends Component {
                         <View style={styles.ballWrapper} key={ball.number} >
                             { ball.active ?
                                 <Button style={styles.ball}
+                                        color={playTypes[this.props.type].color}
                                         onPress={() => this.props.onPress(this.props.type, ball.number)}
                                         title={number + ''}/>
                                 : <Text style={{textAlign: 'center', color: '#777'}}>{number + ''}</Text>
@@ -21,6 +24,12 @@ export default class BallGrid extends Component {
         );
     }
 }
+
+BallGrid.propTypes = {
+    balls: PropTypes.objectOf(PropTypes.instanceOf(Ball)).isRequired,
+    type: PropTypes.oneOf(['port', 'foulPort']).isRequired,
+    onPress: PropTypes.func.isRequired
+};
 
 const styles = StyleSheet.create({
     container: {

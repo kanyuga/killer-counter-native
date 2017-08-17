@@ -8,7 +8,9 @@ import PlayerList from './PlayerList';
 import PlayerForm from './PlayerForm';
 import BallGrid from './BallGrid';
 import PlayActions from './PlayActions';
-import playTypes from '../utils/PlayTypes';
+import { Ball, Player } from '../utils/dataDef';
+import baseStyles from "../utils/styles";
+import PlayerModal from "./PlayerModal";
 
 
 export default class App extends Component {
@@ -17,29 +19,32 @@ export default class App extends Component {
 
     constructor(props) {
         super(props);
+        this.state = this.defaultState();
+    }
 
+    defaultState = () => {
         const balls = {};
         for (let i = 1; i <= this.ballCount; i++) {
-            balls[i] = { number: i, active: true, points: (i === 3 ? 6 : i < 3 ? i + this.ballCount: i)}
+            balls[i] = new Ball(i);
         }
 
-
-        this.state = {
+        return {
             balls: balls,
-            players: [{ name: 'Toph', score: 0, active: false }, { name: "Toph2", score: 0, active: true}],
+            players: [new Player("Player 1"), new Player("Player 2")],
             started: false,
             ballGridActive: false,
             ballGridLegal: true,
             currentPlayer: 0,
-            currentBall: 3
+            currentBall: 3,
+            playerModalActive: false
         };
-    }
+    };
 
     addPlayer = (name) => {
         const players = this.state.players.slice();
-        players.push({ name: name, score: 0, active: false });
+        players.push(new Player(name));
         console.log(players);
-        this.setState({players: players});
+        this.setState({players: players, playerModalActive: false});
     };
 
     startGame = () => {
@@ -49,7 +54,17 @@ export default class App extends Component {
     deletePlayer = (index) => {
         const players = this.state.players.slice();
         players.splice(index, 1);
-        this.setState({players: players});
+        let currentPlayer = this.state.currentPlayer;
+        if (currentPlayer > index) {
+            currentPlayer--;
+        }
+        else if (currentPlayer === index) {
+            currentPlayer = this.nextPlayer(players, currentPlayer - 1);
+        }
+        this.setState({
+            players: players,
+            currentPlayer: currentPlayer
+        });
     };
 
     play = (type, number = null) => {
@@ -61,7 +76,7 @@ export default class App extends Component {
             });
         }
         else {
-            const players = this.state.players.slice();
+            let players = this.state.players.slice();
             const balls = Object.assign({}, this.state.balls);
             const currentPlayer = players[this.state.currentPlayer];
 
@@ -76,21 +91,25 @@ export default class App extends Component {
                     balls[number].active = false;
                     currentPlayer.score += balls[number].points;
                     newState.currentBall = this.nextBall(balls);
+                    players = this.refreshActivePlayers(players, balls);
                     break;
                 case 'hit':
                     newState.currentPlayer = this.nextPlayer(players);
                     break;
                 case 'miss':
-                    currentPlayer.score -= balls[this.state.currentBall].points;
+                    currentPlayer.score -= (this.ballHasBeenPorted() ? balls[this.state.currentBall].points : 0);
+                    players = this.refreshActivePlayers(players);
                     newState.currentPlayer = this.nextPlayer(players);
                     break;
                 case 'foulPort':
-                    currentPlayer.score -= balls[this.state.currentBall].points;
+                    currentPlayer.score -= (this.ballHasBeenPorted() ? balls[number].points : 0);
+                    players = this.refreshActivePlayers(players);
                     newState.currentPlayer = this.nextPlayer(players);
                     break;
                 case 'portCurrentAndWhiteBall':
-                    balls[number].active = false;
+                    balls[this.state.currentBall].active = false;
                     newState.currentBall = this.nextBall(balls);
+                    players = this.refreshActivePlayers(players, balls);
                     newState.currentPlayer = this.nextPlayer(players);
             }
             this.setState(newState);
@@ -101,7 +120,7 @@ export default class App extends Component {
         let gameOver = true;
         Object.keys(balls).map((number) => {
             if (balls[number].active) {
-                gameOver = true;
+                gameOver = false;
                 return false;
             }
         });
@@ -109,35 +128,98 @@ export default class App extends Component {
     };
 
     nextPlayer = (players, currentPlayer = this.state.currentPlayer) => {
-        let nextPlayer = currentPlayer;
-        if (!this.gameOver()) {
-            let counter = 0;
-            do {
-                nextPlayer = (nextPlayer + 1) % players.length;
-                counter++;
-            } while (!players[nextPlayer].active && counter < players.length);
+        let nextPlayer = (currentPlayer + 1) % players.length;
+        while (!players[nextPlayer].active) {
+            nextPlayer = (nextPlayer + 1) % players.length;
         }
         return nextPlayer;
     };
 
     nextBall = (balls, currentBall = this.state.currentBall) => {
         let nextBall = currentBall;
-        while (!balls[nextBall].active) {
-            nextBall = nextBall === this.ballCount ? 1 : nextBall + 1;
+        if (!this.gameOver(balls)) {
+            while (!balls[nextBall].active) {
+                nextBall = (nextBall === this.ballCount) ? 1 : nextBall + 1;
+            }
         }
         return nextBall;
     };
 
+    ballHasBeenPorted = (balls = this.state.balls) => {
+        let ballHasBeenPorted = false;
+        Object.keys(balls).map((number) => {
+            if (!balls[number].active) {
+                ballHasBeenPorted = true;
+                return false;
+            }
+        });
+        return ballHasBeenPorted;
+    };
+
+    refreshActivePlayers = (players = this.state.players, balls = this.state.balls) => {
+        const pointsLeft = this.pointsLeft(balls);
+        const maxScore = this.maxScore(players);
+        players = players.slice();
+        for (let i=0; i < players.length; i++) {
+            players[i].active = (players[i].score + pointsLeft) >= maxScore;
+        }
+        return players;
+    };
+
+    pointsLeft = (balls = this.state.balls) => {
+        let pointsLeft = 0;
+        Object.keys(balls).map((number) => {
+            pointsLeft += balls[number].active ? balls[number].points : 0
+        });
+        return pointsLeft;
+    };
+
+    maxScore = (players = this.state.players) => {
+        let maxScore = players[0].score;
+        players.forEach((player) => {
+            maxScore = Math.max(player.score, maxScore);
+        });
+        return maxScore;
+    };
+
+    resetGame = () => {
+        this.setState(this.defaultState());
+    };
+
+    togglePlayerModal = () => {
+        this.setState({
+            playerModalActive: !this.state.playerModalActive,
+        });
+    };
 
     render() {
+        const playerForm = <PlayerForm onSubmit={this.addPlayer} />;
         return (
             <View style={styles.container}>
-                { !this.state.started ? <PlayerForm onSubmit={this.addPlayer} /> :
+                { this.state.playerModalActive && <PlayerModal onRequestClose={this.togglePlayerModal}>{playerForm}</PlayerModal> }
+                { !this.state.started ? playerForm :
                     <PlayActions onPress={this.play} type={this.state.ballGridLegal ? 'port' : 'foulPort'}>
-                        { this.state.ballGridActive && <BallGrid type={this.state.ballGridLegal ? 'port' : 'foulPort'} balls={this.state.balls} onPress={this.play}/> }
+                        { this.state.ballGridActive
+                            ? <BallGrid type={this.state.ballGridLegal ? 'port' : 'foulPort'} balls={this.state.balls} onPress={this.play}/>
+                            :null
+                        }
                     </PlayActions> }
-                <PlayerList players={this.state.players} onDelete={this.deletePlayer}/>
-                { this.state.players.length > 1 && <View style={{width: '100%'}}><Button title="start" onPress={this.startGame}/></View> }
+                <PlayerList players={this.state.players} onDelete={this.deletePlayer} currentPlayer={this.state.currentPlayer}/>
+                { this.state.players.length > 1 && !this.state.started &&
+                    <View style={{width: '100%'}}>
+                        <Button title="start" onPress={this.startGame}/>
+                    </View>
+                }
+                { this.state.started &&
+                    <View style={{width: '100%', flexDirection: 'row', justifyContent: 'space-around'}}>
+                        <View style={{ flex: 1 }}>
+                            <Button color={baseStyles.colors.secondaryDark} title="New Game" onPress={this.resetGame}/>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Button color={baseStyles.colors.primaryDark} title="Add Player" onPress={this.togglePlayerModal}/>
+                        </View>
+                    </View>
+                }
             </View>
         );
     }
@@ -148,7 +230,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 10,
         justifyContent: 'flex-start',
-        alignItems: 'flex-start',
+        alignItems: 'stretch',
         backgroundColor: '#F5FCFF'
     }
 });
