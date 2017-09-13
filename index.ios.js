@@ -1,5 +1,5 @@
 import React from 'react';
 import { AppRegistry } from 'react-native';
-import App from './components/App';
+import Root from "./js/components/Root";
 
-AppRegistry.registerComponent('killer_native', () => App);
+AppRegistry.registerComponent('killer_native', () => Root);
