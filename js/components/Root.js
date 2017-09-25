@@ -4,8 +4,8 @@ import { Provider } from 'react-redux';
 import {createStore, compose} from 'redux';
 import { gameApp } from "../reducers"
 import {defaultGameState} from "../helpers";
-import App from "./App";
 import {autoRehydrate, persistStore} from "redux-persist";
+import AppContainer from "./App/AppContainer";
 
 let initialState = defaultGameState();
 
@@ -29,7 +29,7 @@ class Root extends Component {
   render() {
     if (!this.state.rehydrated) return  <Text>...Loading </Text>;
     return (<Provider store={store}>
-      <App />
+      <AppContainer />
     </Provider>);
   }
 }

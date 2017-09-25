@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {Modal, StyleSheet, View} from 'react-native';
-import AppButton from "./AppButton";
+import AppButton from "../common/AppButton";
 
 
 export default class PlayerModal extends Component {

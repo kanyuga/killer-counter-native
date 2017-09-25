@@ -21,7 +21,7 @@ export function resetGame(state = initialState, action) {
 }
 
 export function play(state = initialState, action) {
-  const newState = {...state};
+  const newState = JSON.parse(JSON.stringify(state));
   const currentPlayer = Helpers.getCurrentPlayer(newState.players);
   const currentBall = Helpers.getCurrentBall(newState.balls);
   let portedBall;

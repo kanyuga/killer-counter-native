@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
-import {Platform, Text, TouchableNativeFeedback, TouchableOpacity, StyleSheet, View} from "react-native";
+import {Platform, TouchableNativeFeedback, TouchableOpacity, StyleSheet, View} from "react-native";
+import AppText from "./AppText";
 
 export default class AppButton extends Component {
 
@@ -18,7 +19,7 @@ export default class AppButton extends Component {
           backgroundColor: this.props.backgroundColor,
           ...StyleSheet.flatten(styles.textWrapper)
         }, this.props.style]}>
-          <Text style={{ color: this.props.color }}>{this.props.title}</Text>
+          <AppText style={{ color: this.props.color }}>{this.props.title}</AppText>
         </View>
       </Touchable>
     )
